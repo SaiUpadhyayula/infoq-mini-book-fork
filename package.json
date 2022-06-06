@@ -14,13 +14,13 @@
   ],
   "private": true,
   "scripts": {
-    "build": "bash ./gradlew all",
-    "clean": "bash ./gradlew clean",
+    "build": "gradlew.bat all",
+    "clean": "gradlew.bat clean",
     "serve": "npm run watch:all",
     "setup": "npm install && npm run build",
     "start": "npm run setup && npm run watch",
     "watch": "npm run watch:all",
-    "watch:adoc": "bash ./gradlew --continuous html",
+    "watch:adoc": "gradlew.bat --continuous html",
     "watch:html": "nodemon ./watch.js",
     "watch:all": "concurrently --kill-others \"npm run watch:adoc\" \"npm run watch:html\"",
     "release": "release-it"

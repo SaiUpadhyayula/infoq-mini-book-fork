@@ -1,0 +1,38 @@
+[[chapter-3]]
+= Refreshing Configuration Changes using Spring Cloud Bus
+
+Alright, so we managed our configuration through Git Repository and secrets through Vault Secret Store, now how can we handle configuration changes in our microservices ? In a non-trivial setup it’s fairly common that the configuration properties will change now and then, in that case we have to manually trigger the `/refresh` endpoint for each microservice.
+
+You can find more explanation about this topic in the Spring Boot Microservices Project Tutorial Video
+
+But it’s not practical to trigger this endpoint if we have multiple microservices, for this reason we can automate this process by using the *Spring Cloud Bus* project, using this project, we can broadcast the configuration changes through a message broker like Rabbit MQ, and all the consumers which are subscribed to this broker, will refresh the configuration properties.
+
+To add *Spring Cloud Bus* to our project, we can add the following dependency to our `product-service` and `order-service` microservies.
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+</dependency>
+----
+
+After that, we have to add the following properties to the `bootstrap.properties` file
+
+[source, text]
+----
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+----
+
+As you can see we are using RabbitMQ as message broker for this case, you can download and install RabbitMQ from this page – https://www.rabbitmq.com/download.html
+
+TIP: We can also move the RabbitMQ credentials to our Vault Secret Store.
+
+Once this is done, just restart both the microservices, and if you change any property inside the Git Repository, just trigger http://localhost:<port-numbe>/bus/refresh endpoint for either of the microservice.
+
+Spring Cloud Bus will trigger an event and all the microservices subscribed to our Message Broker, will refresh the configuration.
+
+In the next chapter, we are going to implement the *API Gateway* and *Authorization Server* using *Spring Cloud Gateway* and *Keycloak*.

@@ -1,2 +1,161 @@
 [[chapter-3]]
-= Chapter 3
+= Centralized Configuration using Spring Cloud Config Server
+
+We can implement the Centralized Configuration using the Spring Cloud Configuration Server project, using this project we can place the configuration files for all our microservices in a central configuration repository which makes it easier to handle and make changes to them.
+
+To store the configuration properties, we have multiple options to consider:
+
+* Git Repository
+* Local FileSystem
+* Database (through JDBC)
+* Hashicorp Vault
+
+In this chapter, we are going to mainly make use of Git Repository to store the configuration, we will also see in the next section how to use HashiCorp Vault to store secrets (passwords)
+
+== Setting up config server
+
+Setting up a config server is straight forward, we have to first head over to start.spring.io website, and add the following dependencies:
+
+* spring-cloud-config-server
+
+That’s all you need to add to create our Config Server, now once you download the project to your machine you have to add the `@EnableConfigServer` annotation to the `ConfigurationServerApplication` class.
+
+[source,java]
+.src/main/java/com/programming/techie/configurationserver/ConfigurationServerApplication.java
+----
+package com.programming.techie.configurationserver;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.config.server.EnableConfigServer;
+
+@SpringBootApplication
+@EnableConfigServer
+public class ConfigurationServerApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigurationServerApplication.class, args);
+    }
+
+}
+----
+
+Now add the following configuration properties, to the `application.properties` file.
+
+[source,text]
+.src/main/resources/application.properties
+----
+spring.application.name=configuration-server <1>
+server.port=8888 <2>
+spring.cloud.config.server.git.uri=https://github.com/SaiUpadhyayula/microservices-config-server <3>
+spring.cloud.config.server.git.username=                <4>
+spring.cloud.config.server.git.password=                <4>
+
+spring.cloud.config.server.git.clone-on-start=true      <5>
+----
+
+<1> First, we are defining our application name through the spring.application.name
+<2> We are going to use the default port 8888 for the configuration server
+<3> Next, we are going to point to the Git Repository URL, where the configuration properties of our microservices are stored.
+<4> We also added a placeholder to define the username and password of the git repository (make sure not to check in your github credentials 🙂 )
+<5> By default, Spring Cloud Config Server tries to clone a repository after the first HTTP resource call. So we are going to force the server to clone the repository at the time of startup itself, with the help of spring.cloud.config.server.git.clone-on=true property.
+
+That’s all you need to do to set up the config server 🙂 Now let’s refactor our Product and Order Services to make use of the Config Server.
+
+=== Refactoring our Microservices to use Config Server
+
+Our *product-service* and *order-service* are going to be clients for the Config Server, for this reason I am going to add the `spring-cloud-config-client` and `spring-cloud-starter-bootstrap` dependencies to the pom.xml of both `product-service` and `order-service`
+
+[source, xml]
+.pom.xml
+----
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-config-client</artifactId>
+    <version>3.0.1</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bootstrap</artifactId>
+    <version>3.0.0</version>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+----
+
+The `spring-cloud-starter-bootstrap` is used to tell Spring framework to connect to the configuration server at the time of bootstrapping the application.
+
+For this reason, we have to move our configuration from `application.properties` to `bootstrap.properties` file.
+
+[source,text]
+.bootstrap.properties (Product Service)
+----
+spring.application.name=product-service
+server.port=0
+eureka.instance.instance-id=${spring.application.name}:${random.uuid}
+spring.data.mongodb.uri=mongodb://localhost:27017/product-service
+spring.cloud.config.uri=http://localhost:8888
+
+management.endpoints.web.exposure.include=*
+----
+
+[source,text]
+.bootstrap.properties (Order Service)
+----
+spring.application.name=order-service
+server.port=0
+eureka.instance.instance-id=${spring.application.name}:${random.uuid}
+
+spring.datasource.url=jdbc:mysql://localhost:3306/order-service
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.hibernate.ddl-auto=update
+spring.datasource.initialization-mode=always
+spring.jpa.show-sql=true
+spring.datasource.username=root
+spring.datasource.password=mysql
+server.port=0
+
+spring.cloud.config.uri=http://localhost:8888
+management.endpoints.web.exposure.include=*
+----
+
+Okey, we configured the Config Server details in both our microservices, now it’s time to actually move the configuration to our Git Repository, for that I already created a git repository https://github.com/SaiUpadhyayula/microservices-config-server
+
+In there, I created properties file and moved the configuration properties for each microservice.
+
+After moving the configuration properties, this is how the `order-service.properties` file inside the Git Repository looks like:
+
+[source,text]
+.order-service
+----
+spring.datasource.url=jdbc:mysql://localhost:3306/order-service
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.hibernate.ddl-auto=update
+spring.datasource.initialization-mode=always
+spring.jpa.show-sql=true
+----
+
+And this is how the `bootstrap.properties` file looks like inside the order-service:
+
+[source,text]
+.bootstrap.properties (Inside order-service)
+----
+spring.application.name=order-service
+server.port=0
+eureka.instance.instance-id=${spring.application.name}:${random.uuid}
+
+spring.datasource.username=root
+spring.datasource.password=mysql
+server.port=0
+
+spring.cloud.config.uri=http://localhost:8888
+management.endpoints.web.exposure.include=*
+----
+
+Now if you startup both the product-service and order-service applications, they should startup without any errors.
+
+This is all well and good, but we are still left with some important configurations , ie. Database Credentials. Storing the sensitive Database URL and Credentials inside a Git Repository is not good idea, so in the next chapter, we are going to make use of Hashicorp Vault, to store this sensitive information.

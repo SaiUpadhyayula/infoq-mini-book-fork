@@ -1,1 +1,78 @@
 = Introduction
+
+In this guide, we will focus on building a microservice project with Spring Boot and Spring Cloud.
+
+== Download Source Code
+
+You can download the source code of this project at Github - https://github.com/SaiUpadhyayula/springboot-microservices-project
+
+== Spring Cloud Project Overview
+
+The main module which helps us to write microservices using Spring Framework is *Spring Cloud*, in this tutorial series, we are going to mainly concentrate on the following modules which are part of Spring Cloud:
+
+
+* Spring Cloud Config Server
+* Spring Cloud Bus
+* Spring Cloud Netflix Eureka
+* Spring Cloud Circuit Breaker
+* Spring Cloud Sleuth
+* Spring Cloud Gateway
+* Spring Cloud Stream
+
+=== Spring Cloud Config Server
+
+This module is used to externalize the configuration of our microservices into a centralized place.
+
+If there are any changes in the configuration, our applications should be updated without the need to restart them.
+
+There are many options to implement this Centralized Configuration eg: Using a *Git Repository*, or using *HashiCorp Consul* etc.
+
+We are also going to use *HashiCorp Vault* as one of the backends to maintain the secrets for our application.
+
+=== Spring Cloud Bus
+
+This module contains a lightweight message broker implementation, which is mainly used to broadcast some messages to the other services.
+
+In our project, we will use this module, to broadcast configuration changes in our Config Server.
+
+=== Spring Cloud Netflix Eureka
+
+This module is used to implement the Service Registry and Discovery Pattern in Microservices architecture.
+
+As there can be many independent Microservices, we need a reliable way to scale the services and provide inter-service communication instead of hard-coding the service information.
+
+*Spring Cloud Netflix Eureka* module uses Netflix’s Eureka library to provide this functionality.
+
+Other alternatives include Spring Cloud Consul which uses https://www.consul.io/[Hashicorp’s Consul] or https://zookeeper.apache.org/[Spring Cloud Zookeeper for Apache Zookeeper]
+
+=== Spring Cloud Circuit Breaker
+
+Inter-service Communication is common in the Microservice architecture, if one of the service is down, the other service which is communicating with it, should be able to handle this failure gracefully.
+
+*Spring Cloud Circuit Breaker* provides an abstraction over different Circuit Breaker implementations like *Resilience4J, Hystrix, Sentinel* etc.
+
+In our project, we are going to use *Spring Cloud Circuit Breaker* with *Resilience4J*
+
+=== Spring Cloud Sleuth
+
+In Microservice Architecture, if there is any error, it’s hard to debug and trace it, *Spring Cloud Sleuth* provides us with the functionality to trace the inter-service calls.
+
+=== Spring Cloud Gateway
+
+This library helps us to implement the https://microservices.io/patterns/apigateway.html[API Gateway pattern], by hiding the complexity of our microservices from the external clients.
+
+If a client want’s to connect to one of our services, all the traffic will be going through the API Gateway, and the gateway will route the request to the appropriate service.
+
+This library also handles the cross-cutting concerns like Security, Monitoring, Rate-limiting and Resiliency.
+
+We will secure our microservices using *Keycloak* as Authorization Server together with the *Spring Cloud Gateway*.
+
+=== Spring Cloud Stream
+
+This module mainly allows us to implement asynchronous communication between our microservices using event-driven architecture.
+
+We are going to use RabbitMQ as a message broker to implement some event driven microservices.
+
+=== Distributed Logging using ELK Stack
+
+Even though, this is not part of the Spring Cloud Stack, we are going to implement Centralized Logging for our microservices using *ELK Stack* (*Elasticsearch, Logstash* and *Kibana*)

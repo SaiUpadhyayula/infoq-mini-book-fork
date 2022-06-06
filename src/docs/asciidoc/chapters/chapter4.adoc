@@ -1,0 +1,85 @@
+[[chapter-3]]
+= Storing Secrets in Hashicorp Vault
+
+Vault is a tool by Hashicorp which is used to store and access secrets from our application. You can download the software to your machine from the Downloads page – https://www.vaultproject.io/downloads
+
+After installing Vault, you can start the vault server in dev-mode using the below command:
+
+[source, bash]
+----
+$ vault server -dev
+----
+
+And now in the console, you will see the command to set Vault Address as environment variable, you can execute the command based on your Operating System, for Windows the following commands are displayed:
+
+[source, text]
+----
+PowerShell:
+    $env:VAULT_ADDR="http://127.0.0.1:8200"
+cmd.exe:
+    set VAULT_ADDR=http://127.0.0.1:8200
+----
+
+Once you execute the above command, we can now store the secrets inside the Vault Store. To store the secrets, we are going to maintain them in a json file, so I created the file `product-service-credentials.json` and move the `spring.data.mongo.uri` property from `bootstrap.properties` file
+
+*product-service-credentials.json*
+
+[source,json]
+.product-service-credentials.json
+----
+{
+  "spring.data.mongodb.uri": "mongodb://localhost:27017/product-service"
+}
+----
+
+*order-service-credentials.json*
+
+Let’s move the spring.datasource.username and spring.datasource.password properties from the bootstrap.properties file.
+
+[source,json]
+.order-service-credentials.json
+----
+{
+  "spring.datasource.username": "root",
+  "spring.datasource.password": "mysql"
+}
+----
+
+Now we have to write these json files to Vault Store using the following commands:
+
+[source, bash]
+----
+$ vault kv put secret/order-service @order-service-credentials.json
+----
+
+[source, bash]
+----
+$ vault kv put secret/product-service @product-service-credentials.json
+----
+
+== Adding Vault Starter to our Microservices
+
+We moved the secrets to vault, but we still have to configure our microservices as clients to read the secrets from the Vault Server, we can do that by adding the following dependency.
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-config</artifactId>
+</dependency>
+----
+
+Now we have to update our `bootstrap.properties` with the Vault Server information, we can do that by adding the below properties:
+
+[source,text]
+----
+spring.cloud.vault.host=localhost
+spring.cloud.vault.port=8200
+spring.cloud.vault.scheme=http
+spring.cloud.vault.authentication=TOKEN
+spring.cloud.vault.token=s.z39kI9tfR6Ljvkc57MWYhmPX
+spring.cloud.vault.application-name=order-service
+----
+
+After configuring this details inside both product and order service, we can start the applications, and they should run without any issues.
